@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">EcoBuddy</string>
+
+    <string name="title_section1">GPS Navigation</string>
+    <string name="title_section2">Settings</string>
+    <string name="title_section3">About EcoBuddy</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="autocomplete_hint">Enter Destination Address</string>
+
+    <string name="action_settings">Settings</string>
+
+    <string name="title_activity_maps">Map</string>
+</resources>
