@@ -2,6 +2,7 @@ package com.capstone.ecobuddy;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -23,6 +24,11 @@ import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import org.json.JSONObject;
 
@@ -104,8 +110,17 @@ public class MainActivity extends ActionBarActivity implements
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
                 // handle clicks on search results here
                 toggleSearch(true);
-                String selection = filteredList.get(position);
-                Log.v(LOG_TAG, "USER SELECTED: " + selection);
+                final String endDestination = filteredList.get(position);
+                Log.v(LOG_TAG, "USER SELECTED: " + endDestination);
+
+                if (MapsFragment.getCurrentCoords() != null) {
+
+                    new DrawRouteTask().execute(endDestination);
+
+                } else {
+                    // User location has not loaded yet
+                    Toast.makeText(getApplicationContext(), "Please wait...", Toast.LENGTH_SHORT).show();
+                }
 
                 //songOBJ = Utility.toJSON(selection);
                 FragmentManager fragmentManager = getSupportFragmentManager();
@@ -382,7 +397,6 @@ public class MainActivity extends ActionBarActivity implements
             String type = "address";
             String key = DeveloperKey.GOOGLE_MAPS_API_KEY;
 
-            Log.v(LOG_TAG, "QUERY IS: " + q);
             try {
                 // http://api.soundcloud.com/tracks.json?q=F&client_id=57119900bbf2d460a8e1954315827230&limit=5
                 // Construct the URL for the query
@@ -398,7 +412,7 @@ public class MainActivity extends ActionBarActivity implements
                         .build();
 
                 URL url = new URL(builtUri.toString());
-                Log.v(LOG_TAG, "BUILT URI: " + builtUri.toString());
+                //Log.v(LOG_TAG, "BUILT URI: " + builtUri.toString());
                 // Create the request to YouTube, and open the connection
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod("GET");
@@ -475,4 +489,30 @@ public class MainActivity extends ActionBarActivity implements
         }
     }
 
+    public class DrawRouteTask extends AsyncTask<String, Void, Double[][]> {
+        @Override
+        protected Double[][] doInBackground(String... input) {
+            Double[][] routeCoords;
+            JSONObject json = Directions.getDirections(MapsFragment.getCurrentCoords(), input[0]);
+            routeCoords = Directions.getRoutePoints(json);
+            Log.v(LOG_TAG, "RETURNED DIRECTIONS WITH LENGTH: " + new Integer(routeCoords.length).toString());
+
+            return routeCoords;
+        }
+
+        @Override
+        protected void onPostExecute(Double[][] points) {
+            PolylineOptions routeOptions = new PolylineOptions();
+
+            for(int i = 0; i < points.length - 1; i++) {
+                MapsFragment.mMap.addMarker(new MarkerOptions()
+                    .position(new LatLng(points[i][0], points[i][1])));
+                MapsFragment.mMap.addPolyline(new PolylineOptions()
+                        .add(new LatLng(points[i][0], points[i][1]), new LatLng(points[i + 1][0], points[i + 1][1]))
+                        .color(Color.BLUE));
+                Log.v("LOG_TAG", "DIRECTION: " + new Integer(i).toString() + ": " + points[i][0].toString() + ", " + points[i][1].toString());
+                Log.v(LOG_TAG, "ROUTE OPTIONS: " + routeOptions.toString());
+            }
+        }
+    }
 }

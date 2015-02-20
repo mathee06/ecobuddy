@@ -29,7 +29,7 @@ public class QueryJSONParser {
             for(int i = 0; i < jsonArray.length(); i++) {
                 /** Call getQuery with query JSON object to parse the query */
                 queriesList.add(jsonArray.getJSONObject(i).getString(OWM_LOCATION_DESCRIPTION));
-                Log.v(LOG_TAG, "ADDED LOCATION: " + jsonArray.getJSONObject(i).getString(OWM_LOCATION_DESCRIPTION));
+                //Log.v(LOG_TAG, "ADDED LOCATION: " + jsonArray.getJSONObject(i).getString(OWM_LOCATION_DESCRIPTION));
             }
 
         } catch (JSONException e) {

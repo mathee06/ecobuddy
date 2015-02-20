@@ -19,6 +19,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.text.DateFormat;
 import java.util.Date;
@@ -43,11 +44,11 @@ public class MapsFragment extends Fragment implements
     protected final static String LAST_UPDATED_TIME_STRING_KEY = "last-updated-time-string-key";
 
     public static String LOG_TAG = MapsFragment.class.getSimpleName();
-    private GoogleMap mMap;
+    public static GoogleMap mMap;
     private Activity mActivity;
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
-    private LatLng mCurrentCoords;
+    private static LatLng mCurrentCoords;
     protected Location mCurrentLocation;
     protected String mLastUpdateTime;
     protected Boolean firstLaunch = true;
@@ -87,7 +88,7 @@ public class MapsFragment extends Fragment implements
         }
 
         if (firstLaunch) {
-            Log.v(LOG_TAG, "INSIDE UPDATE CURRENT LOCATION MAP: " + mCurrentCoords);
+            //Log.v(LOG_TAG, "INSIDE UPDATE CURRENT LOCATION MAP: " + mCurrentCoords);
             mMap.setMyLocationEnabled(true);
             mMap.setBuildingsEnabled(true);
             mMap.setTrafficEnabled(true);
@@ -203,7 +204,7 @@ public class MapsFragment extends Fragment implements
         mCurrentCoords = new LatLng(location.getLatitude(), location.getLongitude());
         updateCurrentLocationMap();
         //updateUI();
-        Log.v(LOG_TAG, "Location Request :" + location.getLatitude() + "," + location.getLongitude());
+        //Log.v(LOG_TAG, "Location Request :" + location.getLatitude() + "," + location.getLongitude());
     }
 
     @Override
@@ -263,7 +264,9 @@ public class MapsFragment extends Fragment implements
         super.onPause();
         Log.v(LOG_TAG, "onPause HIT!");
         // Stop location updates to save battery, but don't disconnect the GoogleApiClient object.
-        stopLocationUpdates();
+        if (mGoogleApiClient.isConnected()) {
+            stopLocationUpdates();
+        }
     }
 
     @Override
@@ -284,5 +287,21 @@ public class MapsFragment extends Fragment implements
         super.onDestroy();
     }
 
+    /**
+     *
+     */
+    public static String getCurrentCoords() {
+        StringBuilder sb = new StringBuilder();
 
+        sb.append(new Double(mCurrentCoords.latitude).toString());
+        sb.append(",");
+        sb.append(new Double(mCurrentCoords.longitude).toString());
+
+        return sb.toString();
+    }
+
+    public static void drawRoute(PolylineOptions route) {
+        Log.v(LOG_TAG, "INSIDE DRAW ROUTE");
+        mMap.addPolyline(route);
+    }
 }
