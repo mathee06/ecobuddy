@@ -58,6 +58,12 @@ public class MainActivity extends ActionBarActivity implements
      */
     private CharSequence mTitle;
 
+    /**
+     * For DirectionsOO, use connect() after instantiating the object to
+     * actually get the data from a http request.
+     */
+    public static DirectionsOO testDirections;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -489,30 +495,27 @@ public class MainActivity extends ActionBarActivity implements
         }
     }
 
-    public class DrawRouteTask extends AsyncTask<String, Void, Double[][]> {
+    /**
+     * Draw Route Task
+     * - Draws detailed route on the map (snaps to the road).
+     */
+    public class DrawRouteTask extends AsyncTask<String, Void, ArrayList<LatLng>> {
         @Override
-        protected Double[][] doInBackground(String... input) {
-            Double[][] routeCoords;
-            JSONObject json = Directions.getDirections(MapsFragment.getCurrentCoords(), input[0]);
-            routeCoords = Directions.getRoutePoints(json);
-            Log.v(LOG_TAG, "RETURNED DIRECTIONS WITH LENGTH: " + new Integer(routeCoords.length).toString());
+        protected ArrayList<LatLng> doInBackground(String... input) {
+            Log.v("GGWP", lastQuery.toString());
+            testDirections = new DirectionsOO(MapsFragment.getCurrentCoords(), "toronto", DeveloperKey.GOOGLE_MAPS_API_KEY);
+            testDirections.connect();
 
-            return routeCoords;
+            return testDirections.getAllPolylinePointsFromSteps();
         }
 
         @Override
-        protected void onPostExecute(Double[][] points) {
+        protected void onPostExecute(ArrayList<LatLng> points) {
             PolylineOptions routeOptions = new PolylineOptions();
 
-            for(int i = 0; i < points.length - 1; i++) {
-                MapsFragment.mMap.addMarker(new MarkerOptions()
-                    .position(new LatLng(points[i][0], points[i][1])));
-                MapsFragment.mMap.addPolyline(new PolylineOptions()
-                        .add(new LatLng(points[i][0], points[i][1]), new LatLng(points[i + 1][0], points[i + 1][1]))
-                        .color(Color.BLUE));
-                Log.v("LOG_TAG", "DIRECTION: " + new Integer(i).toString() + ": " + points[i][0].toString() + ", " + points[i][1].toString());
-                Log.v(LOG_TAG, "ROUTE OPTIONS: " + routeOptions.toString());
-            }
+            routeOptions.addAll(points);
+            routeOptions.color(Color.BLUE);
+            MapsFragment.mMap.addPolyline(routeOptions);
         }
     }
 }
