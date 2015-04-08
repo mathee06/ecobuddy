@@ -270,9 +270,6 @@ public class Directions {
                                 .snippet("Location Address: ".concat(endAddress))
                                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
                         );
-                        MapsFragment.mMap.addMarker(new MarkerOptions()
-                                .position(centerCoords)
-                        );
                     }
                 });
             }
