@@ -1,9 +1,7 @@
 package com.capstone.ecobuddy;
 
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -27,18 +25,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 
 public class MainActivity extends ActionBarActivity implements
@@ -49,20 +37,19 @@ public class MainActivity extends ActionBarActivity implements
      */
     private NavigationDrawerFragment mNavigationDrawerFragment;
     private static String LOG_TAG = MainActivity.class.getSimpleName();
-    private ArrayList<String> resultList;
+    public static ArrayList<String> resultList;
     private ArrayList<String> filteredList = new ArrayList<>();
 
-    public static CharSequence lastQuery;
     /**
      * Used to store the last screen title. For use in {@link #restoreActionBar()}.
      */
     private CharSequence mTitle;
 
     /**
-     * For DirectionsOO, use connect() after instantiating the object to
+     * For Directions, use connect() after instantiating the object to
      * actually get the data from a http request.
      */
-    public static DirectionsOO testDirections;
+    public static Directions testDirections;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,11 +103,14 @@ public class MainActivity extends ActionBarActivity implements
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
                 // handle clicks on search results here
                 toggleSearch(true);
+
+                // clear any markings from existing map
+                MapsFragment.mMap.clear();
+
                 final String endDestination = filteredList.get(position);
                 Log.v(LOG_TAG, "USER SELECTED: " + endDestination);
 
                 if (MapsFragment.getCurrentCoords() != null) {
-
                     new DrawRouteTask().execute(endDestination);
 
                 } else {
@@ -133,7 +123,6 @@ public class MainActivity extends ActionBarActivity implements
                 Fragment fragmentByID = fragmentManager.findFragmentById(R.id.container);
                 String fragmentID = fragmentByID.toString();
                 Log.v(LOG_TAG, "THE CURRENT FRAGMENT IS: " + fragmentByID.toString());
-
             }
         });
 
@@ -214,46 +203,6 @@ public class MainActivity extends ActionBarActivity implements
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class PlaceholderFragment extends Fragment {
-        /**
-         * The fragment argument representing the section number for this
-         * fragment.
-         */
-        private static final String ARG_SECTION_NUMBER = "section_number";
-
-        /**
-         * Returns a new instance of this fragment for the given section
-         * number.
-         */
-        public static PlaceholderFragment newInstance(int sectionNumber) {
-            PlaceholderFragment fragment = new PlaceholderFragment();
-            Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-            fragment.setArguments(args);
-            return fragment;
-        }
-
-        public PlaceholderFragment() {
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-            return rootView;
-        }
-
-        @Override
-        public void onAttach(Activity activity) {
-            super.onAttach(activity);
-            ((MainActivity) activity).onSectionAttached(
-                    getArguments().getInt(ARG_SECTION_NUMBER));
-        }
     }
 
     // this toggles between the visibility of the search icon and the search box
@@ -369,7 +318,6 @@ public class MainActivity extends ActionBarActivity implements
                             if (results != null && results.count > 0) {
                                 //Log.v(LOG_TAG, "CONSTRAINT IS: " + constraint.toString())
                                 notifyDataSetChanged();
-                                lastQuery = constraint;
                             } else {
                                 notifyDataSetInvalidated();
                             }
@@ -381,129 +329,19 @@ public class MainActivity extends ActionBarActivity implements
         }
     }
 
-    public class AutoCompleteTask extends AsyncTask<String, Void, ArrayList<String>> {
-        @Override
-        protected ArrayList<String> doInBackground(String... input) {
-            ArrayList<String> queries = null;
-
-            // If there's no query, there is nothing to look up
-            if (input.length == 0) {
-                return null;
-            }
-
-            // These two need to be declared outside the try/catch
-            // so that they can be closed in the finally block.
-            HttpURLConnection urlConnection = null;
-            BufferedReader reader = null;
-
-            // Will contain the raw JSON response as a string.
-            String queryJsonStr = null;
-
-            String q = input[0];
-            String type = "address";
-            String key = DeveloperKey.GOOGLE_MAPS_API_KEY;
-
-            try {
-                // http://api.soundcloud.com/tracks.json?q=F&client_id=57119900bbf2d460a8e1954315827230&limit=5
-                // Construct the URL for the query
-                final String BASE_URL = "https://maps.googleapis.com/maps/api/place/autocomplete/json?";
-                final String INPUT_PARAM = "input";
-                final String PLACE_TYPE = "types";
-                final String KEY_PARAM = "key";
-
-                Uri builtUri = Uri.parse(BASE_URL).buildUpon()
-                        .appendQueryParameter(INPUT_PARAM, q)
-                        .appendQueryParameter(PLACE_TYPE, type)
-                        .appendQueryParameter(KEY_PARAM, key)
-                        .build();
-
-                URL url = new URL(builtUri.toString());
-                //Log.v(LOG_TAG, "BUILT URI: " + builtUri.toString());
-                // Create the request to YouTube, and open the connection
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
-                urlConnection.connect();
-
-                StringBuffer buffer = new StringBuffer();
-                try {
-                    // Read the input stream into a String
-                    InputStream inputStream = urlConnection.getInputStream();
-                    if (inputStream == null) {
-                        // Nothing to do.
-                        return null;
-                    }
-                    reader = new BufferedReader(new InputStreamReader(inputStream));
-                } catch (FileNotFoundException fe) {
-                    Log.v(LOG_TAG, "FILE NOT FOUND EXCEPTION CAUGHT...");
-                } catch (Exception e) {
-                    Log.v(LOG_TAG, "EXCEPTION CAUGHT: " + e);
-                }
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                    // But it does make debugging a *lot* easier if you print out the completed
-                    // buffer for debugging.
-                    buffer.append(line + "\n");
-                }
-
-                if (buffer.length() == 0) {
-                    // Stream was empty.  No point in parsing.
-                    return null;
-                }
-
-                queryJsonStr = buffer.toString();
-
-                //Log.v(LOG_TAG, "Query JSON String: " + queryJsonStr);
-
-            } catch (Exception e) {
-                Log.e(LOG_TAG, "ERROR STATE HIT: ", e);
-                // If the code didn't successfully get the weather data, there's no point in attempting
-                // to parse it.
-                return null;
-
-            } finally {
-                if (urlConnection != null) {
-                    urlConnection.disconnect();
-                }
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (final IOException e) {
-                        Log.e("PlaceholderFragment", "Error closing stream", e);
-                    }
-                }
-            }
-            try {
-                JSONObject jsonObject = new JSONObject(queryJsonStr);
-                QueryJSONParser queryJSONParser = new QueryJSONParser();
-
-                // Getting the parsed data as a list construct
-                queries = queryJSONParser.getQueries(jsonObject);
-
-            } catch (Exception e) {
-                Log.d("Exception", e.toString());
-            }
-
-            return queries;
-        }
-
-        @Override
-        protected void onPostExecute(ArrayList<String> arrayLists) {
-            resultList = arrayLists;
-            super.onPostExecute(arrayLists);
-        }
-    }
-
     /**
      * Draw Route Task
      * - Draws detailed route on the map (snaps to the road).
      */
     public class DrawRouteTask extends AsyncTask<String, Void, ArrayList<LatLng>> {
+
+        private String LOG_TAG = DrawRouteTask.class.getSimpleName();
+
+
         @Override
         protected ArrayList<LatLng> doInBackground(String... input) {
-            Log.v("GGWP", lastQuery.toString());
-            testDirections = new DirectionsOO(MapsFragment.getCurrentCoords(), "toronto", DeveloperKey.GOOGLE_MAPS_API_KEY);
+            Log.v(LOG_TAG, "DRAWING DIRECTIONS TO DESTINATION: " + input[0]);
+            testDirections = new Directions(MapsFragment.getCurrentCoords(), input[0]);
             testDirections.connect();
 
             return testDirections.getAllPolylinePointsFromSteps();
@@ -512,7 +350,6 @@ public class MainActivity extends ActionBarActivity implements
         @Override
         protected void onPostExecute(ArrayList<LatLng> points) {
             PolylineOptions routeOptions = new PolylineOptions();
-
             routeOptions.addAll(points);
             routeOptions.color(Color.BLUE);
             MapsFragment.mMap.addPolyline(routeOptions);

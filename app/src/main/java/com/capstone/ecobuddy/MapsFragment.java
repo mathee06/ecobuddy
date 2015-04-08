@@ -19,7 +19,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.text.DateFormat;
 import java.util.Date;
@@ -203,8 +202,6 @@ public class MapsFragment extends Fragment implements
         mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
         mCurrentCoords = new LatLng(location.getLatitude(), location.getLongitude());
         updateCurrentLocationMap();
-        //updateUI();
-        //Log.v(LOG_TAG, "Location Request :" + location.getLatitude() + "," + location.getLongitude());
     }
 
     @Override
@@ -293,15 +290,10 @@ public class MapsFragment extends Fragment implements
     public static String getCurrentCoords() {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(new Double(mCurrentCoords.latitude).toString());
+        sb.append(Double.valueOf(mCurrentCoords.latitude).toString());
         sb.append(",");
-        sb.append(new Double(mCurrentCoords.longitude).toString());
+        sb.append(Double.valueOf(mCurrentCoords.longitude).toString());
 
         return sb.toString();
-    }
-
-    public static void drawRoute(PolylineOptions route) {
-        Log.v(LOG_TAG, "INSIDE DRAW ROUTE");
-        mMap.addPolyline(route);
     }
 }
