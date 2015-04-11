@@ -28,6 +28,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class MainActivity extends ActionBarActivity implements
         NavigationDrawerFragment.NavigationDrawerCallbacks {
@@ -50,6 +51,16 @@ public class MainActivity extends ActionBarActivity implements
      * actually get the data from a http request.
      */
     public static Directions testDirections;
+
+    /**
+     * Navigation layer object
+     */
+    public static NavigationLayer navLayerObject;
+
+    /**
+     * Multi directions variable used in rerouting
+     */
+    public static MultiDirections multiDirections;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,6 +139,17 @@ public class MainActivity extends ActionBarActivity implements
 
         Log.v(LOG_TAG, "VALUE OF LOG TAG IS: " + LOG_TAG);
         actionBar.setCustomView(view);
+    }
+
+    /**
+     * Called when the activity is becoming visible to the user
+     */
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        // Start NavigationLayer
+        navLayerObject = new NavigationLayer(this);
     }
 
     @Override
@@ -344,6 +366,10 @@ public class MainActivity extends ActionBarActivity implements
             testDirections = new Directions(MapsFragment.getCurrentCoords(), input[0]);
             testDirections.connect();
 
+            // This is multi directions for the rerouting feature
+            // - Do not connect yet until all the stops are added
+            multiDirections = new MultiDirections(MapsFragment.getCurrentCoords(), input[0]);
+
             return testDirections.getAllPolylinePointsFromSteps();
         }
 
@@ -352,6 +378,67 @@ public class MainActivity extends ActionBarActivity implements
             PolylineOptions routeOptions = new PolylineOptions();
             routeOptions.addAll(points);
             routeOptions.color(Color.BLUE);
+            MapsFragment.mMap.addPolyline(routeOptions);
+        }
+    }
+
+    /**
+     * Add route to multi directions
+     * @param view
+     */
+    public void addRoute(View view) {
+
+        // Convert marker info to string
+        String stop;
+
+        stop = MultiDirections.latLngToStringFormat(MapsFragment.markerInfo);
+
+        // Add this marker position to the multi directions
+        multiDirections.addAStop(stop);
+    }
+
+    /**
+     * Reroute done button method
+     * @param view
+     */
+    public void rerouteDone(View view) {
+        new DrawMultiRouteTask().execute(multiDirections);
+    }
+
+    /**
+     * Draw multi route task
+     * - Same with the normal route task, but this is for multi directions
+     */
+    public class DrawMultiRouteTask extends AsyncTask<MultiDirections, Void, MultiDirections> {
+
+        private String LOG_TAG = DrawRouteTask.class.getSimpleName();
+
+        @Override
+        protected MultiDirections doInBackground(MultiDirections... args) {
+            args[0].connect();
+            return args[0];
+        }
+
+        @Override
+        protected void onPostExecute(MultiDirections multiDirections1) {
+
+            // Clear the map
+            MapsFragment.mMap.clear();
+
+            // Draw the routes
+
+            // * Combine all the polyline points
+            PolylineOptions routeOptions = new PolylineOptions();
+            Iterator<Directions> iterator = multiDirections1.getDirections().iterator();
+            ArrayList<LatLng> multiRoutes = new ArrayList<LatLng>();
+
+            while(iterator.hasNext()) {
+                multiRoutes.addAll(iterator.next().getAllPolylinePointsFromSteps());
+            }
+
+            // * Actually draw it in the map
+            routeOptions.addAll(multiRoutes);
+            routeOptions.color(Color.RED);
             MapsFragment.mMap.addPolyline(routeOptions);
         }
     }

@@ -18,6 +18,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.text.DateFormat;
@@ -51,6 +52,10 @@ public class MapsFragment extends Fragment implements
     protected Location mCurrentLocation;
     protected String mLastUpdateTime;
     protected Boolean firstLaunch = true;
+
+    // Marker lat,lng info
+    // - This is used so that we can pass the marker into to multi directions
+    public static LatLng markerInfo;
 
     public static MapsFragment newInstance() {
         return new MapsFragment();
@@ -93,9 +98,48 @@ public class MapsFragment extends Fragment implements
             mMap.setTrafficEnabled(true);
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(mCurrentCoords, 16), 2500, null);
             mMap.addMarker(new MarkerOptions()
-                    .title("Curent Location")
+                    .title("Current Location")
                     .position(mCurrentCoords));
             firstLaunch = false;
+
+            // Disable built in buttons on the map
+
+            // * Disable my location button
+            mMap.getUiSettings().setMyLocationButtonEnabled(false);
+
+            // * Disable map toolbar
+            mMap.getUiSettings().setMapToolbarEnabled(false);
+
+            /**
+             * Change what happens when the user clicks on the marker
+             * - Used for rerouting feature
+             */
+            mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+                @Override
+                public boolean onMarkerClick(Marker marker) {
+
+                    // Show the navigation layer when the marker is clicked
+                    MainActivity.navLayerObject.showNavLayer();
+
+                    // Get the marker info
+                    // - The value will be used later, just make it accessible to other methods
+                    markerInfo = marker.getPosition();
+
+                    return false;
+                }
+            });
+
+            /**
+             * Change what happens when the user clicks on the map
+             */
+            mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+                @Override
+                public void onMapClick(LatLng latLng) {
+
+                    // Hide the navigation layer when the map is clicked
+                    MainActivity.navLayerObject.hideNavLayer();
+                }
+            });
         }
     }
 
@@ -285,7 +329,9 @@ public class MapsFragment extends Fragment implements
     }
 
     /**
-     *
+     * Get the current coordinates
+     * - Prints lat,lng
+     * @return
      */
     public static String getCurrentCoords() {
         StringBuilder sb = new StringBuilder();

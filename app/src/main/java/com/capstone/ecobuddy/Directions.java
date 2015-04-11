@@ -28,22 +28,24 @@ import java.util.List;
  * Created by ariffia.
  */
 public class Directions {
-    //Http stuff
+
+    // Http stuff
     private String request;
     private JSONObject json;
 
-    //~List of steps to do the journey
+    // * List of steps to do the journey
     private ArrayList<Step> steps;
 
     private static String LOG_TAG = Directions.class.getSimpleName();
 
     /**
-     * Direction Object Oriented
+     * Directions Object Oriented
      * @param origin Current location
      * @param destination Destination to go to
      */
     public Directions(String origin, String destination) {
-        //Make the request and get the json
+
+        // Make the request and get the json
         this.request = makeRequest(origin, destination);
     }
 
@@ -55,7 +57,7 @@ public class Directions {
     public void connect() {
         this.json = getJsonViaHttp();
 
-        //Process the json and put the data in the variables
+        // Process the json and put the data in the variables
         if(getOkStatus()) {
             getData();
         } else {
@@ -70,14 +72,14 @@ public class Directions {
      */
     public class Step {
 
-        //Variables for this step
+        // Variables for this step
         int distanceInMeters;
         int durationInSeconds;
         String instructions;
         String travelMode;
         LatLng startLocation;
         LatLng endLocation;
-        List<LatLng> polylinePoints;  //Used to draw a detailed route on the map
+        List<LatLng> polylinePoints;  // Used to draw a detailed route on the map
 
         /**
          * Step
@@ -87,48 +89,28 @@ public class Directions {
          */
         public Step(JSONObject step) throws JSONException {
 
-            //Get some data and put them in the variables
+            // Get some data and put them in the variables
             distanceInMeters = step.getJSONObject("distance").getInt("value");
             durationInSeconds = step.getJSONObject("duration").getInt("value");
             instructions = step.getString("html_instructions");
             travelMode = step.getString("travel_mode");
 
-            //Get the start location
+            // Get the start location
             startLocation = new LatLng(
                     step.getJSONObject("start_location").getDouble("lat"),
                     step.getJSONObject("start_location").getDouble("lng")
             );
 
-            //Get the end location
+            // Get the end location
             endLocation = new LatLng(
                     step.getJSONObject("end_location").getDouble("lat"),
                     step.getJSONObject("end_location").getDouble("lng")
             );
 
-            //Get the polyline
+            // Get the polyline
             polylinePoints = com.google.maps.android.PolyUtil.decode(
                     step.getJSONObject("polyline").getString("points")
             );
-        }
-
-        /**
-         * Print Step (work in progress)
-         * @return
-         */
-        public String printStep() {
-            StringBuilder stringBuilder;
-            Iterator<LatLng> latLngIterator;
-
-            stringBuilder = new StringBuilder();
-            latLngIterator = polylinePoints.iterator();
-
-            stringBuilder.append("POLYLINE ");
-            while(latLngIterator.hasNext()) {
-                stringBuilder.append(latLngIterator.next().toString());
-                stringBuilder.append("\n");
-            }
-
-            return stringBuilder.toString();
         }
     }
 
@@ -169,13 +151,13 @@ public class Directions {
         ByteArrayOutputStream byteArrayOutputStream;
         JSONObject json;
 
-        //Get the default client
+        // Get the default client
         httpClient = new DefaultHttpClient();
 
-        //Set up the request
+        // Set up the request
         httpGet = new HttpGet(request);
 
-        //Make the request and catch the response
+        // Make the request and catch the response
         byteArrayOutputStream = new ByteArrayOutputStream();
         try {
             httpResponse = httpClient.execute(httpGet);
@@ -187,7 +169,7 @@ public class Directions {
             e.printStackTrace();
         }
 
-        //Make the json object
+        // Make the json object
         json = new JSONObject();
         try {
             json = new JSONObject(byteArrayOutputStream.toString());
@@ -196,7 +178,7 @@ public class Directions {
             e.printStackTrace();
         }
 
-        //Done and return!
+        // Done and return!
         return json;
     }
 
@@ -237,13 +219,13 @@ public class Directions {
             distanceInKM = String.valueOf(Float.valueOf(distanceInKM) * 0.63);
             Log.v(LOG_TAG, "THE RADIUS USED FOR LOCATIONS IS: " + distanceInKM);
 
-            //Get start location
+            // Get start location
             final LatLng startLocation = new LatLng(
                     legsOBJ.getJSONObject("start_location").getDouble("lat"),
                     legsOBJ.getJSONObject("start_location").getDouble("lng")
             );
 
-            //Get end location
+            // Get end location
             final LatLng endLocation = new LatLng(
                     legsOBJ.getJSONObject("end_location").getDouble("lat"),
                     legsOBJ.getJSONObject("end_location").getDouble("lng")
@@ -253,9 +235,10 @@ public class Directions {
 
             final Handler mHandler = new Handler(Looper.getMainLooper());
             if (Looper.myLooper() == Looper.getMainLooper()) {
-                //super.post(event);
+//                super.post(event);
             } else {
                 mHandler.post(new Runnable() {
+
                     @Override
                     public void run() {
                         MapsFragment.mMap.addMarker(new MarkerOptions()
@@ -281,19 +264,19 @@ public class Directions {
 
             new FetchLocationsTask().execute(fetchLocationsData);
 
-            //Fill the steps
+            // Fill the steps
             ArrayList<Step> stepList;
 
-            //Get the steps
+            // Get the steps
             JSONArray steps = legsOBJ.getJSONArray("steps");
             stepList = new ArrayList<Step>();
 
-            //Get the elements
+            // Get the elements
             for (int i = 0; i < steps.length(); i++) {
                 stepList.add(new Step(steps.getJSONObject(i)));
             }
 
-            //Put the steps
+            // Put the steps
             this.steps = stepList;
         }
 
@@ -302,7 +285,7 @@ public class Directions {
         }
     }
 
-    // find midpoint of the start/end destination
+    // Find midpoint of the start/end destination
     private LatLng MidPoint(LatLng startCoords, LatLng endCoords) {
         double dLon = Math.toRadians(endCoords.longitude - startCoords.longitude);
         double Bx = Math.cos(Math.toRadians(endCoords.latitude)) * Math.cos(dLon);
