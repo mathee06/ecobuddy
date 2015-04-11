@@ -1,7 +1,5 @@
 package com.capstone.ecobuddy;
 
-import com.google.android.gms.maps.model.LatLng;
-
 import java.util.ArrayList;
 
 /**
@@ -47,49 +45,39 @@ public class MultiDirections {
     public void connect() {
 
         // Make sure that there is at least one stop
-        Directions tmp;
+        Directions tmpDirections;
 
         if(this.stops.size() > 0) {
 
             // * Add the directions from the origin to the first stop
-            tmp = new Directions(this.origin, stops.get(0));
-            tmp.connect();
-            multiDirections.add(tmp);
+            tmpDirections = new Directions(this.origin, stops.get(0));
+            tmpDirections.connect();
+
+            multiDirections.add(tmpDirections);
 
             // * Go through the other stops
             for(int i = 1; i < stops.size(); i++) {
-                tmp = new Directions(stops.get(i - 1), stops.get(i));
-                tmp.connect();
-                multiDirections.add(tmp);
+                tmpDirections = new Directions(stops.get(i - 1), stops.get(i));
+                tmpDirections.connect();
+
+                multiDirections.add(tmpDirections);
             }
 
             // * Add the directions from the final stop to the destination
-            tmp = new Directions(stops.get(stops.size() - 1), this.destination);
-            tmp.connect();
-            multiDirections.add(tmp);
+            tmpDirections = new Directions(stops.get(stops.size() - 1), this.destination);
+            tmpDirections.connect();
+
+            multiDirections.add(tmpDirections);
 
         } else {
 
             // * There should be at least one stop
             //   - Use Directions instead next time
-            tmp = new Directions(this.origin, this.destination);
-            tmp.connect();
-            multiDirections.add(tmp);
+            tmpDirections = new Directions(this.origin, this.destination);
+            tmpDirections.connect();
+
+            multiDirections.add(tmpDirections);
         }
-    }
-
-    /**
-     * Convert lat/lng to string format
-     * - To be used in http request
-     */
-    public static String latLngToStringFormat(LatLng latLng) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(Double.valueOf(latLng.latitude).toString());
-        sb.append(",");
-        sb.append(Double.valueOf(latLng.longitude).toString());
-
-        return sb.toString();
     }
 
     /**

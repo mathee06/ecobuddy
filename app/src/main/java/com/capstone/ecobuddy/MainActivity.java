@@ -391,7 +391,7 @@ public class MainActivity extends ActionBarActivity implements
         // Convert marker info to string
         String stop;
 
-        stop = MultiDirections.latLngToStringFormat(MapsFragment.markerInfo);
+        stop = Utility.latLngToStringFormat(MapsFragment.markerInfo);
 
         // Add this marker position to the multi directions
         multiDirections.addAStop(stop);

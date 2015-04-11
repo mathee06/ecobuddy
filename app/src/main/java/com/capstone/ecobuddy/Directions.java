@@ -267,16 +267,16 @@ public class Directions {
             // Fill the steps
             ArrayList<Step> stepList;
 
-            // Get the steps
+            // * Get the steps
             JSONArray steps = legsOBJ.getJSONArray("steps");
             stepList = new ArrayList<Step>();
 
-            // Get the elements
+            // * Get the elements
             for (int i = 0; i < steps.length(); i++) {
                 stepList.add(new Step(steps.getJSONObject(i)));
             }
 
-            // Put the steps
+            // * Put the steps
             this.steps = stepList;
         }
 
