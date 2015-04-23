@@ -246,6 +246,18 @@ public class MapsFragment extends Fragment implements
         mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
         mCurrentCoords = new LatLng(location.getLatitude(), location.getLongitude());
         updateCurrentLocationMap();
+
+        /**
+         * New stuff
+         * - Voice
+         * - Car tracking
+         */
+
+        // Say something
+        StringToSpeech.sayThis("Hello Mathee");
+
+        // Track the car
+        CameraMovement.makeTheCameraFollowTheCar(mCurrentLocation);
     }
 
     @Override

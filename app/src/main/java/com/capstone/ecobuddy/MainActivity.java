@@ -166,6 +166,9 @@ public class MainActivity extends ActionBarActivity implements
 
         Log.v(LOG_TAG, "VALUE OF LOG TAG IS: " + LOG_TAG);
         actionBar.setCustomView(view);
+
+        // Installing text to speech
+        StringToSpeech.installTTS(this);
     }
 
     /**
@@ -177,6 +180,11 @@ public class MainActivity extends ActionBarActivity implements
 
         // Start NavigationLayer
         navLayerObject = new NavigationLayer(this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
     }
 
     // ACTIVITY RESULT FROM SPEECH INPUT
