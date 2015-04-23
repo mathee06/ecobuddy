@@ -1,9 +1,13 @@
 package com.capstone.ecobuddy;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.DrawerLayout;
@@ -25,10 +29,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 public class MainActivity extends ActionBarActivity implements
         NavigationDrawerFragment.NavigationDrawerCallbacks {
@@ -40,6 +46,11 @@ public class MainActivity extends ActionBarActivity implements
     private static String LOG_TAG = MainActivity.class.getSimpleName();
     public static ArrayList<String> resultList;
     private ArrayList<String> filteredList = new ArrayList<>();
+
+    private static final int SPEECH_REQUEST_CODE = 0;
+    private static final int REQUEST_OK = -1;
+    private static final int REQUEST_CANCELLED = 0;
+
 
     /**
      * Used to store the last screen title. For use in {@link #restoreActionBar()}.
@@ -90,6 +101,21 @@ public class MainActivity extends ActionBarActivity implements
         final ImageView searchIcon = (ImageView) view.findViewById(R.id.search_icon);
         searchIcon.setImageResource(android.R.drawable.ic_menu_search);
 
+        final ImageView voiceIcon = (ImageView) view.findViewById(R.id.voice_icon);
+        voiceIcon.setImageResource(android.R.drawable.ic_btn_speak_now);
+        voiceIcon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (isConnected()) {
+                    Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                    intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                    startActivityForResult(intent, SPEECH_REQUEST_CODE);
+                } else {
+                    Toast.makeText(getApplicationContext(), "Internet Connection Required.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
         // the view that contains the clearlable autocomplete text view
         final ClearableAutoCompleteTextView searchBox = (ClearableAutoCompleteTextView) view.findViewById(R.id.search_box);
 
@@ -137,6 +163,7 @@ public class MainActivity extends ActionBarActivity implements
             }
         });
 
+
         Log.v(LOG_TAG, "VALUE OF LOG TAG IS: " + LOG_TAG);
         actionBar.setCustomView(view);
     }
@@ -150,6 +177,45 @@ public class MainActivity extends ActionBarActivity implements
 
         // Start NavigationLayer
         navLayerObject = new NavigationLayer(this);
+    }
+
+    // ACTIVITY RESULT FROM SPEECH INPUT
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.v(LOG_TAG, "SPEECH RECOGNIZER REQUEST CODE: " + requestCode + " , RESULT CODE: " + resultCode);
+
+        if (requestCode == SPEECH_REQUEST_CODE) {
+            if (resultCode == RESULT_OK) {
+                List<String> searchList = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                String searchInput = searchList.get(0);
+                Log.v(LOG_TAG, "RECEIVED SEARCH LIST IS: " + searchList.toString() + " w/ INPUT: " + searchInput);
+
+                if (searchList.contains("clear") || searchList.contains("remove") || searchList.contains("clean") || searchList.contains("clear all") || searchList.contains("remove all") || searchList.contains("clean all")) {
+                    Log.v(LOG_TAG, "USER WISHES TO CLEAR ALL MARKERS");
+                    clearAllPOIMarkers();
+                } else {
+                    Log.v(LOG_TAG, "USER WISHES FIND POI LOCATIONS");
+                    ArrayList<String> fetchPOIData = new ArrayList<String>();
+                    fetchPOIData.add("poi");
+                    fetchPOIData.add(MapsFragment.getCurrentCoords());
+                    fetchPOIData.add(searchInput);
+                    new FetchLocationsTask().execute(fetchPOIData);
+                }
+            } else if (resultCode == RESULT_CANCELED) {
+                Log.v(LOG_TAG, "USER HAS CANCELLED SPEECH INPUT...");
+            }
+        } else {
+            Log.v(LOG_TAG, "SPEECH ACTIVITY: REQUEST CODE DOES NOT MATCH: " + requestCode);
+        }
+
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void clearAllPOIMarkers() {
+        Iterator<Marker> iterator = POILocations.poiMarkerList.iterator();
+        while (iterator.hasNext()) {
+            iterator.next().remove();
+        }
     }
 
     @Override
@@ -168,6 +234,14 @@ public class MainActivity extends ActionBarActivity implements
                 replaceFragment(fragment, fragmentTag);
                 break;
         }
+    }
+
+    public  boolean isConnected() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo net = connectivityManager.getActiveNetworkInfo();
+        if (net != null && net.isAvailable() && net.isConnected()) {
+            return true;
+        } else { return false; }
     }
 
     private void replaceFragment(Fragment fragment, String fragmentTag) {
@@ -233,17 +307,20 @@ public class MainActivity extends ActionBarActivity implements
     protected void toggleSearch(boolean reset) {
         ClearableAutoCompleteTextView searchBox = (ClearableAutoCompleteTextView) findViewById(R.id.search_box);
         ImageView searchIcon = (ImageView) findViewById(R.id.search_icon);
+        ImageView voiceIcon = (ImageView) findViewById(R.id.voice_icon);
         if (reset) {
             // hide search box and show search icon
             searchBox.setText("");
             searchBox.setVisibility(View.GONE);
             searchIcon.setVisibility(View.VISIBLE);
+            voiceIcon.setVisibility(View.VISIBLE);
             // hide the keyboard
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(searchBox.getWindowToken(), 0);
         } else {
             // hide search icon and show search box
             searchIcon.setVisibility(View.GONE);
+            voiceIcon.setVisibility(View.GONE);
             searchBox.setVisibility(View.VISIBLE);
             searchBox.requestFocus();
             // show the keyboard
@@ -260,7 +337,7 @@ public class MainActivity extends ActionBarActivity implements
 
         @Override
         public int getCount() {
-            if (!filteredList.isEmpty()) {
+            if (filteredList != null && !filteredList.isEmpty()) {
                 return filteredList.size();
             } else {
                 Log.v(LOG_TAG, "RESULT LIST IS EMPTY!");
@@ -438,7 +515,7 @@ public class MainActivity extends ActionBarActivity implements
 
             // * Actually draw it in the map
             routeOptions.addAll(multiRoutes);
-            routeOptions.color(Color.RED);
+            routeOptions.color(Color.BLUE);
             MapsFragment.mMap.addPolyline(routeOptions);
         }
     }

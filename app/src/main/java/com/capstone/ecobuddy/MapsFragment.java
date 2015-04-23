@@ -45,7 +45,7 @@ public class MapsFragment extends Fragment implements
 
     public static String LOG_TAG = MapsFragment.class.getSimpleName();
     public static GoogleMap mMap;
-    private Activity mActivity;
+    public static Activity mActivity;
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
     private static LatLng mCurrentCoords;

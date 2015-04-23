@@ -258,6 +258,7 @@ public class Directions {
             }
 
             ArrayList<String> fetchLocationsData = new ArrayList<String>();
+            fetchLocationsData.add("stations");
             fetchLocationsData.add(distanceInKM);
             fetchLocationsData.add(Double.toString(centerCoords.latitude));
             fetchLocationsData.add(Double.toString(centerCoords.longitude));
